@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "jest --verbose",
-    "lint": "eslint ."
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "lint": "eslint .",
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand"
   },
   "author": "Santeri",
   "license": "ISC",
@@ -18,11 +18,13 @@
     "mongoose": "^7.2.1"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.41.0",
     "eslint-plugin-react": "^7.32.2",
     "jest": "^29.5.0",
     "lodash": "^4.17.21",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3"
   },
   "jest": {
     "testEnvironment": "node"
