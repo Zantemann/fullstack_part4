@@ -2,8 +2,10 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
+const bcrypt = require('bcrypt')
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 const initialBlogs = [
   {
@@ -127,6 +129,82 @@ describe('PUT /api/blogs/:id', () => {
     const updatedBlog = updatedBlogs.find(blog => blog.id === blogToUpdate.id)
 
     expect(updatedBlog.likes).toEqual(updatedLikes)
+  })
+})
+
+describe( 'POST /api/users', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('sekret', 10)
+    const user = new User({ username: 'root', passwordHash })
+
+    await user.save()
+  })
+
+  test('creating new user with a new username', async () => {
+    const usersBeforeAddition = await api.get('/api/users').expect(200)
+
+    const testUser1 = {
+      username: 'test1',
+      name: 'tester',
+      password: 'password',
+    }
+
+    await api
+      .post('/api/users')
+      .send(testUser1)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAfterAddition = await api.get('/api/users').expect(200)
+    expect(usersAfterAddition.body).toHaveLength(usersBeforeAddition.body.length + 1)
+
+    const usernames = usersAfterAddition.body.map(u => u.username)
+    expect(usernames).toContain(testUser1.username)
+  })
+
+  test('should not create a user with password less than 3 characters', async () => {
+    const userData = {
+      username: 'User',
+      name: 'Test User',
+      password: 'xd',
+    }
+    const response = await api.post('/api/users').send(userData)
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe('Password must be at least 3 characters')
+  })
+
+  test('should not create a user with username less than 3 characters', async () => {
+    const userData = {
+      username: 'Us',
+      name: 'Test User',
+      password: 'password'
+    }
+    const response = await api.post('/api/users').send(userData)
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe('Username must be at least 3 characters')
+  })
+
+  test('creation fails with proper statuscode and message if username already taken', async () => {
+    const usersBeforeAddition = await api.get('/api/users').expect(200)
+
+    const newUser = {
+      username: 'root',
+      name: 'Superuser',
+      password: 'salainen',
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    expect(result.body.error).toContain('expected `username` to be unique')
+
+    const usersAfterAddition = await api.get('/api/users').expect(200)
+    expect(usersAfterAddition.body).toHaveLength(usersBeforeAddition.body.length)
   })
 })
 
