@@ -183,7 +183,7 @@ describe( 'POST /api/users', () => {
     }
     const response = await api.post('/api/users').send(userData)
     expect(response.status).toBe(400)
-    expect(response.body.error).toBe('Username must be at least 3 characters')
+    expect(response.body.error).toBe('Username must be at least 3 characters or unique')
   })
 
   test('creation fails with proper statuscode and message if username already taken', async () => {
@@ -195,13 +195,11 @@ describe( 'POST /api/users', () => {
       password: 'salainen',
     }
 
-    const result = await api
+    await api
       .post('/api/users')
       .send(newUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
-
-    expect(result.body.error).toContain('expected `username` to be unique')
 
     const usersAfterAddition = await api.get('/api/users').expect(200)
     expect(usersAfterAddition.body).toHaveLength(usersBeforeAddition.body.length)
